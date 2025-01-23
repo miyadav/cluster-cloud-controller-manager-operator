@@ -1,0 +1,20 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: azure-load-balancer-tcp-idle-timeout-annotation-validation-policy
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["services"]
+  validations:
+    - expression: |
+        (!has(object.metadata.annotations) || 
+        !('service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout' in object.metadata.annotations) ||
+        (object.metadata.annotations['service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout'].matches('^[0-9]+$') &&
+        int(object.metadata.annotations['service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout']) >= 4 &&
+        int(object.metadata.annotations['service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout']) <= 100))
+      message: "The annotation 'service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout', if specified, must have a value between 4 and 100."
+     

@@ -10,8 +10,21 @@ spec:
         operations: ["CREATE", "UPDATE"]
         resources: ["services"]
   validations:
-    - expression: "(!has(object.metadata.annotations) || !('cloud.google.com/network-tier' in object.metadata.annotations) ||
-                   (object.metadata.annotations['cloud.google.com/network-tier'] == 'Standard' || object.metadata.annotations['cloud.google.com/network-tier'] == 'Premium') ||
-                   (has(oldObject.metadata.annotations) && oldObject.metadata.annotations['cloud.google.com/network-tier'] == object.metadata.annotations['cloud.google.com/network-tier']))"
+    - expression: | 
+       !(
+         // If the annotation is present on the new object:
+          has(object.metadata.annotations) &&
+          ('cloud.google.com/network-tier' in object.metadata.annotations)
+         // and it is not in [Standard, Premium]
+             && !(object.metadata.annotations['cloud.google.com/network-tier'] in ['Standard','Premium'])
+         // and either there was no oldObject OR
+        // the old annotation differs from the new annotation
+        && (
+        oldObject == null 
+        || !has(oldObject.metadata.annotations) && ('cloud.google.com/network-tier' in oldObject.metadata.annotations) 
+        || oldObject.metadata.annotations['cloud.google.com/network-tier'] 
+           != object.metadata.annotations['cloud.google.com/network-tier']
+        )
+       )
       message: "The annotation 'cloud.google.com/network-tier', if specified, must be either 'Standard' or 'Premium'."
 
